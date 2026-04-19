@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>캠페인 요청서 — 자동 준비물 생성기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Noto+Serif+KR:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #07080F;
+  --surf:      #0D1120;
+  --surf2:     #131729;
+  --border:    #1C2340;
+  --text:      #CDD5E8;
+  --bright:    #F0F5FF;
+  --muted:     #4A5A7A;
+  --accent:    #FFE500;
+  --accent-bg: rgba(255,229,0,0.08);
+  --accent-bd: rgba(255,229,0,0.22);
+  --cyan:      #00D4FF;
+  --green:     #00E57A;
+  --red:       #FF4B6E;
+  --r:         8px;
+  --r-lg:      14px;
+  --sans:      'Noto Sans KR', sans-serif;
+  --serif:     'Noto Serif KR', serif;
+  --mono:      'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* ── grid bg ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,229,0,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,229,0,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── noise ── */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+}
+
+.wrap {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+  position: relative; z-index: 1;
+}
+
+/* ══ HEADER ══════════════════════════════════ */
+header {
+  padding: 60px 0 44px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 44px;
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 20px; height: 1px;
+  background: var(--accent);
+}
+
+header h1 {
+  font-family: var(--serif);
+  font-size: clamp(26px, 5vw, 44px);
+  font-weight: 700;
+  color: var(--bright);
+  line-height: 1.2;
+  margin-bottom: 14px;
+}
+header h1 em {
+  font-style: italic;
+  color: var(--accent);
+  -webkit-text-stroke: 0px;
+}
+
+.header-desc {
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 560px;
+}
+
+/* ══ FORM CARD ══════════════════════════════ */
+.form-card {
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.card-head {
+  background: var(--surf2);
+  border-bottom: 1px solid var(--border);
+  padding: 18px 28px;
+  display: flex; align-items: center; gap: 12px;
+}
+.card-head h2 {
+  font-family: var(--serif);
+  font-size: 17px;
+  color: var(--bright);
+  font-weight: 600;
+}
+.tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  padding: 3px 9px;
+  border-radius: 4px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  border: 1px solid var(--accent-bd);
+  text-transform: uppercase;
+}
+
+.form-body { padding: 28px; }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px 24px;
+}
+
+.fg { display: flex; flex-direction: column; gap: 7px; }
+.fg.full { grid-column: 1 / -1; }
+
+label.field-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  display: flex; align-items: center; gap: 7px;
+}
+.req { color: var(--accent); font-size: 13px; line-height: 1; }
+.opt {
+  font-family: var(--mono);
+  font-size: 9.5px; font-weight: 400;
+  text-transform: none; letter-spacing: 0;
+  border: 1px solid var(--border);
+  padding: 1px 6px; border-radius: 3px;
+  color: var(--muted);
+}
+
+input[type=text], input[type=url], input[type=date],
+input[type=number], select, textarea {
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  padding: 10px 14px;
+  width: 100%;
+  transition: border-color .18s, box-shadow .18s;
+  outline: none;
+  -webkit-appearance: none;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(255,229,0,0.07);
+}
+input::placeholder, textarea::placeholder { color: var(--muted); opacity: .55; }
+
+textarea { resize: vertical; min-height: 72px; }
+
+select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M1 1l5 4.5L11 1' stroke='%234A5A7A' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+
+input[type=date]::-webkit-calendar-picker-indicator { filter: invert(.4); cursor: pointer; }
+
+.date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* channel chips */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; }
+.chip input[type=checkbox] { display: none; }
+.chip span {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .15s;
+  user-select: none;
+}
+.chip input:checked + span {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ══ GENERATE BUTTON ════════════════════════ */
+.btn-gen {
+  width: 100%;
+  padding: 18px 32px;
+  background: var(--accent);
+  color: #000;
+  font-family: var(--sans);
+  font-size: 15.5px;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--r);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  transition: background .2s, transform .15s, box-shadow .2s;
+  letter-spacing: 0.02em;
+  margin-bottom: 52px;
+  position: relative; overflow: hidden;
+}
+.btn-gen:hover {
+  background: #fff07a;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 40px rgba(255,229,0,.22);
+}
+.btn-gen:active { transform: translateY(0); }
+.btn-gen .ico { font-size: 20px; }
+
+.btn-gen.loading { pointer-events: none; opacity: .7; }
+.btn-gen.loading .ico { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ══ RESULTS ════════════════════════════════ */
+#results { display: none; }
+#results.on { display: block; animation: riseUp .4s ease both; }
+
+@keyframes riseUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.res-header {
+  margin-bottom: 28px;
+  display: flex; align-items: center; gap: 16px;
+}
+.res-header h2 {
+  font-family: var(--serif);
+  font-size: 22px;
+  color: var(--bright);
+  font-weight: 600;
+}
+
+.res-grid { display: flex; flex-direction: column; gap: 18px; }
+
+.rc {
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  animation: riseUp .5s ease both;
+}
+.rc:nth-child(1) { animation-delay: .04s; }
+.rc:nth-child(2) { animation-delay: .08s; }
+.rc:nth-child(3) { animation-delay: .12s; }
+.rc:nth-child(4) { animation-delay: .16s; }
+.rc:nth-child(5) { animation-delay: .20s; }
+.rc:nth-child(6) { animation-delay: .24s; }
+
+/* accent left bar per card */
+.rc:nth-child(1) { border-left: 3px solid var(--accent); }
+.rc:nth-child(2) { border-left: 3px solid var(--cyan); }
+.rc:nth-child(3) { border-left: 3px solid #7C6CFF; }
+.rc:nth-child(4) { border-left: 3px solid var(--green); }
+.rc:nth-child(5) { border-left: 3px solid #FF9F0A; }
+.rc:nth-child(6) { border-left: 3px solid var(--red); }
+
+.rc-head {
+  background: var(--surf2);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.rc-title { display: flex; align-items: center; gap: 10px; }
+.rc-num {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--surf);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+.rc-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--bright);
+  letter-spacing: 0.01em;
+}
+
+.btn-copy-all {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  padding: 5px 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .15s;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.btn-copy-all:hover { border-color: var(--accent); color: var(--accent); }
+.btn-copy-all.ok   { border-color: var(--green); color: var(--green); }
+
+.rc-body { padding: 20px; }
+
+/* plain text output */
+.out-text {
+  font-size: 14px;
+  line-height: 1.9;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+/* mono block */
+.out-mono {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.75;
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px 18px;
+  color: var(--cyan);
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-x: auto;
+}
+
+/* copy items */
+.ci-list { display: flex; flex-direction: column; gap: 10px; }
+.ci {
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 12px 14px;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  transition: border-color .15s;
+}
+.ci:hover { border-color: rgba(255,229,0,.3); }
+.ci-left { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; }
+.ci-badge {
+  font-family: var(--mono);
+  font-size: 10px; font-weight: 600;
+  padding: 2px 7px; border-radius: 3px;
+  background: var(--accent-bg); color: var(--accent);
+  border: 1px solid var(--accent-bd);
+  align-self: flex-start;
+  white-space: nowrap;
+}
+.ci-badge.cyan { background: rgba(0,212,255,.08); color: var(--cyan); border-color: rgba(0,212,255,.25); }
+.ci-text { font-size: 13.5px; line-height: 1.65; color: var(--text); }
+.ci-text.mono { font-family: var(--mono); font-size: 12px; color: var(--cyan); word-break: break-all; }
+
+.btn-ci {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 4px 9px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .13s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+.btn-ci:hover { border-color: var(--accent); color: var(--accent); }
+.btn-ci.ok    { border-color: var(--green); color: var(--green); }
+
+/* checklist */
+.cl-list { display: flex; flex-direction: column; gap: 6px; }
+.cl-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 9px 12px; border-radius: var(--r);
+  cursor: pointer; transition: background .13s;
+}
+.cl-item:hover { background: var(--surf2); }
+.cl-item input[type=checkbox] {
+  width: 15px; height: 15px;
+  margin-top: 3px; flex-shrink: 0;
+  accent-color: var(--green); cursor: pointer;
+}
+.cl-item .cl-txt {
+  font-size: 13.5px; line-height: 1.65; color: var(--text);
+  transition: color .13s;
+  cursor: pointer;
+}
+.cl-item.done .cl-txt { color: var(--muted); text-decoration: line-through; }
+
+/* section divider */
+.ci-section-head {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 0 6px;
+  margin-top: 4px;
+  border-bottom: 1px dashed var(--border);
+  margin-bottom: 8px;
+}
+
+/* ══ FOOTER ═════════════════════════════════ */
+footer {
+  margin-top: 60px;
+  padding: 28px 0;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+footer p {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+
+/* ══ RESPONSIVE ══════════════════════════ */
+@media (max-width: 600px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .fg.full { grid-column: 1; }
+  .form-body { padding: 20px; }
+}
+
+/* ── scrollbar ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--surf); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ══ HEADER ══ -->
+<header>
+  <div class="eyebrow">Campaign Brief Tool · v1.0</div>
+  <h1>캠페인 요청서<br><em>자동 준비물 생성기</em></h1>
+  <p class="header-desc">캠페인 정보를 입력하면 광고 문구 · UTM · 체크리스트 · Notion 카드 · Slack 공지를 한 번에 만들어 드립니다.</p>
+</header>
+
+<!-- ══ FORM ══ -->
+<div class="form-card">
+  <div class="card-head">
+    <span class="tag">BRIEF</span>
+    <h2>캠페인 기본 정보 입력</h2>
+  </div>
+  <div class="form-body">
+    <div class="form-grid">
+
+      <div class="fg">
+        <label class="field-label">① 캠페인명 <span class="req">*</span></label>
+        <input type="text" id="f-name" placeholder="예: 봄맞이 신규회원 특별 혜택">
+      </div>
+
+      <div class="fg">
+        <label class="field-label">② 목표 <span class="req">*</span></label>
+        <select id="f-goal">
+          <option value="">선택하세요</option>
+          <option value="가입">가입 — 회원가입 유도</option>
+          <option value="구매">구매 — 구매 전환 유도</option>
+          <option value="리드">리드 — 문의·신청 수집</option>
+        </select>
+      </div>
+
+      <div class="fg">
+        <label class="field-label">③ 대상 타깃 <span class="req">*</span></label>
+        <input type="text" id="f-target" placeholder="예: 20~35세 직장인 여성">
+      </div>
+
+      <div class="fg">
+        <label class="field-label">④ 혜택 / 프로모션 <span class="req">*</span></label>
+        <input type="text" id="f-benefit" placeholder="예: 첫 구매 30% 할인 + 무료 배송">
+      </div>
+
+      <div class="fg full">
+        <label class="field-label">⑤ 집행 채널 <span class="req">*</span></label>
+        <div class="chips">
+          <label class="chip"><input type="checkbox" name="ch" value="메타(Meta)"><span>메타 (Meta)</span></label>
+          <label class="chip"><input type="checkbox" name="ch" value="구글(Google)"><span>구글 (Google)</span></label>
+          <label class="chip"><input type="checkbox" name="ch" value="네이버(Naver)"><span>네이버 (Naver)</span></label>
+          <label class="chip"><input type="checkbox" name="ch" value="이메일(Email)"><span>이메일 (Email)</span></label>
+          <label class="chip"><input type="checkbox" name="ch" value="블로그(Blog)"><span>블로그 (Blog)</span></label>
+        </div>
+      </div>
+
+      <div class="fg">
+        <label class="field-label">⑥ 예산 <span class="req">*</span></label>
+        <input type="text" id="f-budget" placeholder="예: 월 500만원">
+      </div>
+
+      <div class="fg">
+        <label class="field-label">⑦ 캠페인 기간 <span class="req">*</span></label>
+        <div class="date-row">
+          <input type="date" id="f-start">
+          <input type="date" id="f-end">
+        </div>
+      </div>
+
+      <div class="fg full">
+        <label class="field-label">⑧ 랜딩 URL <span class="req">*</span></label>
+        <input type="text" id="f-url" placeholder="예: https://www.example.com/promo/spring2026">
+      </div>
+
+      <div class="fg full">
+        <label class="field-label">⑨ 핵심 메시지 — 딱 한 문장 <span class="req">*</span></label>
+        <input type="text" id="f-headline" placeholder="예: 이번 봄, 첫 구매 혜택으로 나만의 스타일을 완성하세요.">
+      </div>
+
+      <div class="fg full">
+        <label class="field-label">⑩ 주의사항 (금지 표현 · 필수 표기)</label>
+        <textarea id="f-caution" placeholder="예: '최저가 보장' 표현 금지 / 이벤트 기간 반드시 표기 / '100% 효과 보장' 사용 불가"></textarea>
+      </div>
+
+      <div class="fg full">
+        <label class="field-label">⑪ 참고 링크 <span class="opt">선택</span></label>
+        <input type="text" id="f-ref" placeholder="예: 경쟁사 광고 URL, 레퍼런스 이미지 링크">
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══ GENERATE BTN ══ -->
+<button class="btn-gen" id="genBtn" onclick="generate()">
+  <span class="ico">⚡</span>
+  자동으로 준비물 만들기
+</button>
+
+<!-- ══ RESULTS ══ -->
+<div id="results">
+  <div class="res-header">
+    <h2>📋 자동 생성된 준비물</h2>
+  </div>
+  <div class="res-grid">
+
+    <!-- 01 3줄 요약 -->
+    <div class="rc">
+      <div class="rc-head">
+        <div class="rc-title">
+          <span class="rc-num">01</span>
+          <span class="rc-name">3줄 요약 — 문제 · 해결 · 왜 지금</span>
+        </div>
+        <button class="btn-copy-all" data-target="r-summary">복사</button>
+      </div>
+      <div class="rc-body">
+        <div class="out-text" id="r-summary"></div>
+      </div>
+    </div>
+
+    <!-- 02 광고 문구 -->
+    <div class="rc">
+      <div class="rc-head">
+        <div class="rc-title">
+          <span class="rc-num">02</span>
+          <span class="rc-name">광고 문구 8개 — 짧은 4개 + 긴 4개</span>
+        </div>
+        <button class="btn-copy-all" data-target="r-copies">전체 복사</button>
+      </div>
+      <div class="rc-body">
+        <div class="ci-list" id="r-copies"></div>
+      </div>
+    </div>
+
+    <!-- 03 UTM -->
+    <div class="rc">
+      <div class="rc-head">
+        <div class="rc-title">
+          <span class="rc-num">03</span>
+          <span class="rc-name">UTM 템플릿 3개 — 복붙 전용</span>
+        </div>
+        <button class="btn-copy-all" data-target="r-utms">전체 복사</button>
+      </div>
+      <div class="rc-body">
+        <div class="ci-list" id="r-utms"></div>
+      </div>
+    </div>
+
+    <!-- 04 체크리스트 -->
+    <div class="rc">
+      <div class="rc-head">
+        <div class="rc-title">
+          <span class="rc-num">04</span>
+          <span class="rc-name">표현 점검 체크리스트 10개</span>
+        </div>
+        <button class="btn-copy-all" data-target="r-cl">복사</button>
+      </div>
+      <div class="rc-body">
+        <div class="cl-list" id="r-cl"></div>
+      </div>
+    </div>
+
+    <!-- 05 Notion 카드 -->
+    <div class="rc">
+      <div class="rc-head">
+        <div class="rc-title">
+          <span class="rc-num">05</span>
+          <span class="rc-name">Notion 카드 — 필드별 내용</span>
+        </div>
+        <button class="btn-copy-all" data-target="r-notion">복사</button>
+      </div>
+      <div class="rc-body">
+        <div class="out-mono" id="r-notion"></div>
+      </div>
+    </div>
+
+    <!-- 06 Slack 공지 -->
+    <div class="rc">
+      <div class="rc-head">
+        <div class="rc-title">
+          <span class="rc-num">06</span>
+          <span class="rc-name">Slack 공유 공지 초안 — 7줄</span>
+        </div>
+        <button class="btn-copy-all" data-target="r-slack">복사</button>
+      </div>
+      <div class="rc-body">
+        <div class="out-text" id="r-slack"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  <p>CAMPAIGN BRIEF TOOL · 입력 내용은 브라우저에서만 처리되며 외부 서버로 전송되지 않습니다.</p>
+</footer>
+</div>
+
+<script>
+// ── helpers ──────────────────────────────────
+const $ = id => document.getElementById(id);
+
+function fmtDate(s) {
+  if (!s) return '미정';
+  const d = new Date(s + 'T00:00:00');
+  return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`;
+}
+
+function slugify(t) {
+  return (t || '')
+    .toLowerCase()
+    .replace(/[^\w\s]/g, '')
+    .replace(/\s+/g, '_')
+    .substring(0, 40) || 'campaign';
+}
+
+function chs() {
+  return [...document.querySelectorAll('input[name="ch"]:checked')].map(e => e.value);
+}
+
+function goalLabel(g) {
+  return { '가입': '회원 가입', '구매': '구매 전환', '리드': '리드 수집' }[g] || g;
+}
+function goalAction(g) {
+  return { '가입': '지금 가입하기', '구매': '지금 구매하기', '리드': '지금 신청하기' }[g] || '확인하기';
+}
+function goalProblem(g, tgt) {
+  return {
+    '가입': `${tgt}은(는) 아직 서비스를 경험하지 못해 다양한 혜택을 놓치고 있습니다.`,
+    '구매': `${tgt}은(는) 구매를 고민하면서도 결정을 미루고 있습니다.`,
+    '리드': `${tgt}은(는) 적합한 솔루션을 찾지 못해 어려움을 겪고 있습니다.`,
+  }[g] || `${tgt}은(는) 아직 적절한 해결책을 찾지 못하고 있습니다.`;
+}
+
+// ── 01 3줄 요약 ──────────────────────────────
+function gen3Lines(d) {
+  const period = (d.start && d.end) ? `${fmtDate(d.start)} ~ ${fmtDate(d.end)}` : '한정 기간';
+  return [
+    `🔴 문제: ${goalProblem(d.goal, d.target)}`,
+    `🟡 해결: [${d.name}] 캠페인이 "${d.benefit}"을(를) 통해 ${d.target}의 ${goalLabel(d.goal)}을 돕습니다.`,
+    `🟢 왜 지금: ${period}에만 제공되는 특별 기회입니다. ${d.headline}`,
+  ].join('\n\n');
+}
+
+// ── 02 광고 문구 ─────────────────────────────
+function genCopies(d) {
+  const act = goalAction(d.goal);
+  const short = [
+    `${d.benefit}, 지금 바로!`,
+    `${d.target}을 위한 ${d.name}`,
+    `${goalLabel(d.goal)} 챙기고 ${d.benefit} 받기`,
+    `놓치면 후회할 단 한 번의 기회 ✔`,
+  ];
+  const long = [
+    `${d.target}이라면 주목! ${d.benefit} 혜택과 함께 [${d.name}]에 참여하세요. ${d.headline}`,
+    `${fmtDate(d.start)}부터 ${fmtDate(d.end)}까지만 드리는 특별 혜택. ${d.benefit}으로 ${goalLabel(d.goal)}을 시작할 완벽한 타이밍입니다.`,
+    `[${d.name}] ${d.target}을 위해 준비했습니다. ${d.benefit} 혜택을 놓치지 마세요. ${act}!`,
+    `${d.headline} ${d.benefit}으로 ${goalLabel(d.goal)}을 달성하는 가장 빠른 방법, [${d.name}]에서 확인하세요.`,
+  ];
+  return { short, long };
+}
+
+// ── 03 UTM ───────────────────────────────────
+function genUTMs(d) {
+  const base = d.url || 'https://example.com';
+  const sep  = base.includes('?') ? '&' : '?';
+  const slug = slugify(d.name);
+  const map = {
+    '메타(Meta)':    { src: 'facebook',  med: 'paid_social' },
+    '구글(Google)':  { src: 'google',    med: 'cpc' },
+    '네이버(Naver)': { src: 'naver',     med: 'cpc' },
+    '이메일(Email)': { src: 'email',     med: 'newsletter' },
+    '블로그(Blog)':  { src: 'blog',      med: 'content' },
+  };
+  const fallbacks = [
+    { ch: '메타(Meta)',    src: 'facebook', med: 'paid_social' },
+    { ch: '구글(Google)',  src: 'google',   med: 'cpc' },
+    { ch: '네이버(Naver)', src: 'naver',    med: 'cpc' },
+  ];
+  const chosen = d.channels.length ? d.channels.slice(0, 3) : fallbacks.map(f => f.ch);
+  while (chosen.length < 3) chosen.push(fallbacks[chosen.length].ch);
+
+  return chosen.map(ch => {
+    const m = map[ch] || { src: ch.toLowerCase().replace(/\W/g,''), med: 'paid' };
+    return {
+      ch,
+      url: `${base}${sep}utm_source=${m.src}&utm_medium=${m.med}&utm_campaign=${slug}&utm_content=main_ad`
+    };
+  });
+}
+
+// ── 04 체크리스트 ────────────────────────────
+function genChecklist(d) {
+  const urlLabel = d.url ? d.url.substring(0, 40) + (d.url.length > 40 ? '...' : '') : '랜딩 URL';
+  const period = (d.start && d.end) ? `${fmtDate(d.start)} ~ ${fmtDate(d.end)}` : '캠페인 기간';
+  const first  = d.caution ? d.caution.split('\n')[0].trim().substring(0, 50) : null;
+  return [
+    `'최고', '1등', '유일', '절대' 등 절대적 표현을 광고 소재에 사용하지 않았나요?`,
+    `가격·할인율 표기 시 '~부터', '최대', '~에 한함' 등 조건을 명확히 표기했나요?`,
+    `이벤트 유효 기간(${period})이 소재·랜딩 페이지에 표시되어 있나요?`,
+    `개인정보 수집·이용 동의 안내가 랜딩 페이지에 포함되어 있나요?`,
+    `사용된 이미지·영상·폰트의 저작권을 확인했나요?`,
+    `랜딩 URL(${urlLabel})이 정상 작동하는지 실제로 접속해 테스트했나요?`,
+    `광고임을 나타내는 필수 표시(예: 광고 · AD · 협찬)가 적절히 포함되어 있나요?`,
+    `${d.target} 연령·특성에 부적절한 표현이나 이미지가 없는지 확인했나요?`,
+    `허위·과장 광고 표현(예: '100% 효과 보장', '부작용 없음')이 없는지 확인했나요?`,
+    first
+      ? `주의사항의 금지 표현이 소재에 없는지 확인했나요? (예: "${first}")`
+      : `내부 캠페인 가이드라인에 따른 표현 검수가 최종 완료되었나요?`,
+  ];
+}
+
+// ── 05 Notion 카드 ───────────────────────────
+function genNotion(d) {
+  const chs = d.channels.join(', ') || '미선택';
+  const period = (d.start && d.end) ? `${fmtDate(d.start)} ~ ${fmtDate(d.end)}` : '미정';
+  return [
+    `📋 캠페인명     : ${d.name || '미입력'}`,
+    `🎯 목표         : ${goalLabel(d.goal) || '미입력'}`,
+    `👥 대상 타깃    : ${d.target || '미입력'}`,
+    `🎁 혜택         : ${d.benefit || '미입력'}`,
+    `📡 채널         : ${chs}`,
+    `💰 예산         : ${d.budget || '미입력'}`,
+    `📅 기간         : ${period}`,
+    `🔗 랜딩 URL     : ${d.url || '미입력'}`,
+    `✍️  핵심 메시지  : ${d.headline || '미입력'}`,
+    `⚠️  주의사항     : ${d.caution || '없음'}`,
+    `🔗 참고 링크    : ${d.ref || '없음'}`,
+    `📊 상태         : 🟡 검토 중`,
+  ].join('\n');
+}
+
+// ── 06 Slack 공지 ────────────────────────────
+function genSlack(d) {
+  const chs    = d.channels.join(' / ') || '미정';
+  const period = (d.start && d.end) ? `${fmtDate(d.start)} ~ ${fmtDate(d.end)}` : '일정 미정';
+  return [
+    `📣 *[캠페인 공유] ${d.name || '캠페인명 미입력'}*`,
+    ``,
+    `👥 *대상:* ${d.target || '미입력'}`,
+    `🎁 *혜택:* ${d.benefit || '미입력'}`,
+    `📅 *기간:* ${period}`,
+    `📡 *채널:* ${chs}`,
+    `💰 *예산:* ${d.budget || '미입력'}`,
+    `🔗 *랜딩:* ${d.url || '미입력'}`,
+    ``,
+    `💬 _"${d.headline || '핵심 메시지 미입력'}"_`,
+    `✅ 검토 후 피드백 부탁드립니다!`,
+  ].join('\n');
+}
+
+// ── DOM builders ─────────────────────────────
+function makeCopyItem(text, badge, idx, mono) {
+  const d = document.createElement('div');
+  d.className = 'ci';
+  d.innerHTML = `
+    <div class="ci-left">
+      <span class="ci-badge${mono ? ' cyan' : ''}">${badge}</span>
+      <span class="ci-text${mono ? ' mono' : ''}" id="ci-${idx}">${escape2html(text)}</span>
+    </div>
+    <button class="btn-ci" onclick="copyOne(this,'ci-${idx}')">복사</button>
+  `;
+  return d;
+}
+
+function makeCheckItem(text, idx) {
+  const d = document.createElement('div');
+  d.className = 'cl-item';
+  d.id = `cl-${idx}`;
+  d.innerHTML = `
+    <input type="checkbox" id="ck-${idx}" onchange="toggleCl(${idx})">
+    <span class="cl-txt" onclick="document.getElementById('ck-${idx}').click()">${escape2html(text)}</span>
+  `;
+  return d;
+}
+
+function escape2html(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function sectionHead(label) {
+  const d = document.createElement('div');
+  d.className = 'ci-section-head';
+  d.textContent = label;
+  return d;
+}
+
+// ── main generate ─────────────────────────────
+function generate() {
+  const d = {
+    name:     $('f-name').value.trim(),
+    goal:     $('f-goal').value,
+    target:   $('f-target').value.trim(),
+    benefit:  $('f-benefit').value.trim(),
+    channels: chs(),
+    budget:   $('f-budget').value.trim(),
+    start:    $('f-start').value,
+    end:      $('f-end').value,
+    url:      $('f-url').value.trim(),
+    headline: $('f-headline').value.trim(),
+    caution:  $('f-caution').value.trim(),
+    ref:      $('f-ref').value.trim(),
+  };
+
+  if (!d.name || !d.goal || !d.target || !d.benefit || !d.url || !d.headline) {
+    const btn = $('genBtn');
+    btn.style.background = '#FF4B6E';
+    btn.style.color = '#fff';
+    btn.querySelector('.ico').textContent = '⚠';
+    btn.childNodes[btn.childNodes.length - 1].textContent = ' 필수 항목을 모두 입력해 주세요';
+    setTimeout(() => {
+      btn.style.background = ''; btn.style.color = '';
+      btn.querySelector('.ico').textContent = '⚡';
+      btn.childNodes[btn.childNodes.length - 1].textContent = ' 자동으로 준비물 만들기';
+    }, 2200);
+    return;
+  }
+
+  // Loading state
+  const btn = $('genBtn');
+  btn.classList.add('loading');
+  btn.querySelector('.ico').textContent = '🔄';
+
+  setTimeout(() => {
+    btn.classList.remove('loading');
+    btn.querySelector('.ico').textContent = '✅';
+
+    // 01
+    $('r-summary').textContent = gen3Lines(d);
+
+    // 02
+    const cop = genCopies(d);
+    const copEl = $('r-copies');
+    copEl.innerHTML = '';
+    copEl.appendChild(sectionHead('짧은 문구 — 15자 내외'));
+    cop.short.forEach((t, i) => copEl.appendChild(makeCopyItem(t, `짧은 ${i+1}`, `s${i}`, false)));
+    copEl.appendChild(sectionHead('긴 문구 — 40~80자'));
+    cop.long.forEach((t, i) => copEl.appendChild(makeCopyItem(t, `긴 ${i+1}`, `l${i}`, false)));
+
+    // 03
+    const utmItems = genUTMs(d);
+    const utmEl = $('r-utms');
+    utmEl.innerHTML = '';
+    utmItems.forEach((u, i) => utmEl.appendChild(makeCopyItem(u.url, u.ch, `u${i}`, true)));
+
+    // 04
+    const clItems = genChecklist(d);
+    const clEl = $('r-cl');
+    clEl.innerHTML = '';
+    clItems.forEach((t, i) => clEl.appendChild(makeCheckItem(t, i)));
+
+    // 05
+    $('r-notion').textContent = genNotion(d);
+
+    // 06
+    $('r-slack').textContent = genSlack(d);
+
+    // show
+    const res = $('results');
+    res.classList.add('on');
+    setTimeout(() => res.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  }, 600);
+}
+
+// ── checklist toggle ──────────────────────────
+function toggleCl(i) {
+  const item = $(`cl-${i}`);
+  const cb   = $(`ck-${i}`);
+  if (item) item.classList.toggle('done', cb.checked);
+}
+
+// ── copy helpers ──────────────────────────────
+function copyOne(btn, id) {
+  const el = $(id);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => {
+    btn.textContent = '✓';
+    btn.classList.add('ok');
+    setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('ok'); }, 1800);
+  });
+}
+
+// copy-all button handler
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.btn-copy-all');
+  if (!btn) return;
+  const id = btn.dataset.target;
+  const el = $(id);
+  if (!el) return;
+
+  let text = '';
+  if (el.classList.contains('ci-list')) {
+    text = [...el.querySelectorAll('.ci-text')].map(x => x.textContent).join('\n\n');
+  } else if (el.classList.contains('cl-list')) {
+    text = [...el.querySelectorAll('.cl-txt')].map(x => `☐ ${x.textContent}`).join('\n');
+  } else {
+    text = el.textContent;
+  }
+
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ 복사됨';
+    btn.classList.add('ok');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('ok'); }, 1800);
+  });
+});
+</script>
+</body>
+</html>
